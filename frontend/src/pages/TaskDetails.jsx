@@ -2,18 +2,37 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import {
+  ArrowRight, MessageCircle, Paperclip,
+  Upload, Trash2, Download, Calendar,
+  User, Folder, ChevronRight
+} from 'lucide-react'
 
 const NEXT_STATUS = { todo: 'in_progress', in_progress: 'completed', completed: null }
 const STATUS_LABEL = { todo: 'To Do', in_progress: 'In Progress', completed: 'Completed' }
 
-const StatusBadge = ({ status }) => {
-  const map = { todo:'badge-todo', in_progress:'badge-in_progress', completed:'badge-completed' }
-  return <span className={`badge ${map[status]||'badge-todo'}`}>{STATUS_LABEL[status]||status}</span>
+const STATUS_STYLES = {
+  todo: 'bg-white/10 text-white/60',
+  in_progress: 'bg-amber-500/20 text-amber-300',
+  completed: 'bg-emerald-500/20 text-emerald-300'
 }
+
+const PRIORITY_COLORS = {
+  low: 'text-emerald-400',
+  medium: 'text-amber-400',
+  high: 'text-red-400'
+}
+
+const StatusBadge = ({ status }) => (
+  <span className={`px-2.5 py-1 text-xs rounded-lg ${STATUS_STYLES[status]}`}>
+    {STATUS_LABEL[status]}
+  </span>
+)
 
 export default function TaskDetails() {
   const { id } = useParams()
   const { user, isAdmin } = useAuth()
+
   const [task, setTask] = useState(null)
   const [comments, setComments] = useState([])
   const [attachments, setAttachments] = useState([])
@@ -27,11 +46,14 @@ export default function TaskDetails() {
       const [tr, cr, ar] = await Promise.all([
         api.get(`/tasks/${id}`),
         api.get(`/tasks/${id}/comments`),
-        api.get(`/tasks/${id}/attachments`),
+        api.get(`/tasks/${id}/attachments`)
       ])
-      setTask(tr.data.task); setComments(cr.data.comments); setAttachments(ar.data.attachments)
-    } catch(e) { console.error(e) }
-    finally { setLoading(false) }
+      setTask(tr.data.task)
+      setComments(cr.data.comments)
+      setAttachments(ar.data.attachments)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchAll() }, [id])
@@ -47,9 +69,11 @@ export default function TaskDetails() {
     setPosting(true)
     try {
       const r = await api.post(`/tasks/${id}/comments`, { comment_text: commentText })
-      setComments(p => [...p, r.data.comment]); setCommentText('')
-    } catch(e) { console.error(e) }
-    finally { setPosting(false) }
+      setComments(p => [...p, r.data.comment])
+      setCommentText('')
+    } finally {
+      setPosting(false)
+    }
   }
 
   const deleteComment = async (cid) => {
@@ -58,14 +82,22 @@ export default function TaskDetails() {
   }
 
   const uploadFile = async (e) => {
-    const file = e.target.files[0]; if (!file) return
-    const fd = new FormData(); fd.append('file', file)
+    const file = e.target.files[0]
+    if (!file) return
+
+    const fd = new FormData()
+    fd.append('file', file)
+
     setUploading(true)
     try {
-      const r = await api.post(`/tasks/${id}/attachments`, fd, { headers:{ 'Content-Type':'multipart/form-data' } })
+      const r = await api.post(`/tasks/${id}/attachments`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       setAttachments(p => [...p, r.data.attachment])
-    } catch(err) { alert(err.response?.data?.error || 'Upload failed') }
-    finally { setUploading(false); e.target.value='' }
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   const deleteAttachment = async (aid) => {
@@ -73,157 +105,201 @@ export default function TaskDetails() {
     setAttachments(p => p.filter(a => a.id !== aid))
   }
 
-  if (loading) return <div style={{ padding:'3rem', color:'var(--text-muted)' }}>Loading…</div>
-  if (!task) return <div style={{ padding:'3rem', color:'#dc2626' }}>Task not found.</div>
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full" />
+    </div>
+  )
+
+  if (!task) return <div className="p-8 text-red-400">Task not found</div>
 
   return (
-    <div className="page-body">
+    <div className="min-h-screen bg-[#0a0a0f] text-white p-6 max-w-6xl mx-auto">
+
       {/* Breadcrumb */}
-      <div style={{ marginBottom:'1rem', fontSize:'0.8125rem', color:'var(--text-muted)', display:'flex', gap:'0.5rem', alignItems:'center' }}>
-        <Link to="/projects" style={{ color:'var(--text-muted)', textDecoration:'none' }}>Projects</Link>
-        <span>/</span>
-        <Link to={`/projects/${task.project_id}`} style={{ color:'var(--text-muted)', textDecoration:'none' }}>{task.project_name}</Link>
-        <span>/</span>
-        <span style={{ color:'var(--text-primary)' }}>{task.task_name}</span>
+      <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
+        <Link to="/projects" className="hover:text-white">Projects</Link>
+        <ChevronRight size={12} />
+        <Link to={`/projects/${task.project_id}`} className="hover:text-white">
+          {task.project_name}
+        </Link>
+        <ChevronRight size={12} />
+        <span className="text-white/70">{task.task_name}</span>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:'1.5rem', alignItems:'start' }}>
-        {/* Task info */}
-        <div>
-          <div className="card" style={{ padding:'1.5rem', marginBottom:'1.25rem' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem', gap:'1rem' }}>
+      <div className="grid lg:grid-cols-3 gap-6">
+
+        {/* LEFT */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* TASK CARD */}
+          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6">
+
+            <div className="flex justify-between items-center mb-4">
+
               {isAdmin ? (
-                // 1. Admin -> Always read-only badge
                 <StatusBadge status={task.status} />
               ) : task.assigned_user_id === user?.id ? (
-                // 2. User assigned to this task -> Forward button
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div className="flex items-center gap-2">
                   <StatusBadge status={task.status} />
                   {NEXT_STATUS[task.status] && (
                     <button
-                      className="btn btn-primary"
-                      style={{ fontSize:'0.75rem', padding:'0.3rem 0.6rem' }}
-                      onClick={()=>handleStatusChange(NEXT_STATUS[task.status])}
+                      onClick={() => handleStatusChange(NEXT_STATUS[task.status])}
+                      className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded-lg"
                     >
-                      → {STATUS_LABEL[NEXT_STATUS[task.status]]}
+                      Next <ArrowRight size={12} />
                     </button>
                   )}
                 </div>
               ) : (
-                // 3. Others -> Just Badge
                 <StatusBadge status={task.status} />
               )}
+
             </div>
 
-            <p style={{ fontSize:'0.875rem', color:'var(--text-secondary)', lineHeight:1.6, marginBottom:'1.25rem', whiteSpace:'pre-wrap' }}>
-              {task.description || <span style={{ color:'var(--text-muted)', fontStyle:'italic' }}>No description.</span>}
+            <h1 className="text-2xl font-bold mb-2">{task.task_name}</h1>
+
+            <p className="text-white/50 mb-5">
+              {task.description || 'No description'}
             </p>
 
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-              {[
-                ['Project', <Link to={`/projects/${task.project_id}`} style={{ color:'var(--accent)', textDecoration:'none' }}>{task.project_name}</Link>],
-                ['Assigned to', task.assigned_user_name || '—'],
-                ['Priority', <span className={`badge badge-${task.priority}`}>{task.priority}</span>],
-                ['Status', <StatusBadge status={task.status} />],
-                ['Deadline', task.deadline || '—'],
-                ['Created', task.created_at?.slice(0,10)],
-              ].map(([lbl, val]) => (
-                <div key={lbl} style={{ background:'var(--bg-muted)', borderRadius:7, padding:'0.75rem' }}>
-                  <p style={{ fontSize:'0.6875rem', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:'0.25rem', fontWeight:500 }}>{lbl}</p>
-                  <p style={{ fontSize:'0.8125rem', color:'var(--text-primary)' }}>{val}</p>
+            {/* INFO GRID */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+
+              <div className="bg-white/[0.03] p-3 rounded-xl">
+                <p className="text-white/30 text-xs mb-1">Project</p>
+                <Link to={`/projects/${task.project_id}`} className="text-indigo-400 flex items-center gap-1">
+                  <Folder size={14} /> {task.project_name}
+                </Link>
+              </div>
+
+              <div className="bg-white/[0.03] p-3 rounded-xl">
+                <p className="text-white/30 text-xs mb-1">Assigned</p>
+                <p className="flex items-center gap-1 text-white/70">
+                  <User size={14} /> {task.assigned_user_name || '—'}
+                </p>
+              </div>
+
+              <div className="bg-white/[0.03] p-3 rounded-xl">
+                <p className="text-white/30 text-xs mb-1">Priority</p>
+                <p className={PRIORITY_COLORS[task.priority]}>
+                  {task.priority}
+                </p>
+              </div>
+
+              <div className="bg-white/[0.03] p-3 rounded-xl">
+                <p className="text-white/30 text-xs mb-1">Deadline</p>
+                <p className="flex items-center gap-1 text-white/70">
+                  <Calendar size={14} /> {task.deadline || '—'}
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          {/* COMMENTS */}
+          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-6">
+
+            <h2 className="flex items-center gap-2 text-lg mb-4">
+              <MessageCircle size={16} /> Comments ({comments.length})
+            </h2>
+
+            <form onSubmit={postComment} className="flex gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs">
+                {user.name?.charAt(0)}
+              </div>
+
+              <div className="flex-1">
+                <input
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2 text-sm"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={posting || !commentText.trim()}
+                className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-sm"
+              >
+                {posting ? '...' : 'Post'}
+              </button>
+            </form>
+
+            <div className="space-y-3">
+              {comments.map(c => (
+                <div key={c.id} className="flex gap-3 group">
+
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs">
+                    {c.user_name?.charAt(0)}
+                  </div>
+
+                  <div className="flex-1 bg-white/[0.03] p-3 rounded-xl">
+                    <div className="flex justify-between text-xs text-white/40 mb-1">
+                      <span>{c.user_name}</span>
+                      <span>{c.timestamp?.slice(0,16)}</span>
+                    </div>
+
+                    <p className="text-sm text-white/60">{c.comment_text}</p>
+
+                    {(c.user_id === user.id || isAdmin) && (
+                      <button
+                        onClick={() => deleteComment(c.id)}
+                        className="opacity-0 group-hover:opacity-100 text-red-400 text-xs mt-1"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Comments */}
-          <div className="card" style={{ padding:'1.25rem' }}>
-            <h2 style={{ fontSize:'0.875rem', fontWeight:600, marginBottom:'1rem', color:'var(--text-primary)' }}>
-              Comments ({comments.length})
-            </h2>
-
-            <div style={{ marginBottom:'1rem' }}>
-              {comments.length === 0
-                ? <p style={{ color:'var(--text-muted)', fontSize:'0.8125rem' }}>No comments yet.</p>
-                : comments.map(c => (
-                  <div key={c.id} style={{ padding:'0.75rem', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'0.75rem' }}>
-                    <div>
-                      <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', marginBottom:'0.25rem' }}>
-                        <div style={{ width:24, height:24, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, flexShrink:0 }}>
-                          {c.user_name?.charAt(0).toUpperCase()}
-                        </div>
-                        <span style={{ fontSize:'0.8125rem', fontWeight:500, color:'var(--text-primary)' }}>{c.user_name}</span>
-                        <span style={{ fontSize:'0.6875rem', color:'var(--text-muted)' }}>{c.timestamp?.slice(0,16).replace('T',' ')}</span>
-                      </div>
-                      <p style={{ fontSize:'0.8125rem', color:'var(--text-secondary)', paddingLeft:32 }}>{c.comment_text}</p>
-                    </div>
-                    {(c.user_id === user.id || isAdmin) && (
-                      <button className="btn btn-ghost" style={{ fontSize:'0.75rem', padding:'0.2rem 0.5rem', color:'var(--text-muted)', flexShrink:0 }}
-                        onClick={()=>deleteComment(c.id)}>×</button>
-                    )}
-                  </div>
-                ))
-              }
-            </div>
-
-            <form onSubmit={postComment} style={{ display:'flex', gap:'0.5rem' }}>
-              <input
-                className="input"
-                placeholder="Add a comment…"
-                value={commentText}
-                onChange={e=>setCommentText(e.target.value)}
-              />
-              <button type="submit" className="btn btn-primary" disabled={posting || !commentText.trim()} style={{ flexShrink:0 }}>
-                {posting ? '…' : 'Post'}
-              </button>
-            </form>
-          </div>
         </div>
 
-        {/* Attachments */}
-        <div className="card" style={{ padding:'1.25rem' }}>
-          <h2 style={{ fontSize:'0.875rem', fontWeight:600, marginBottom:'1rem', color:'var(--text-primary)' }}>
-            Attachments ({attachments.length})
-          </h2>
+        {/* RIGHT */}
+        <div className="space-y-6">
 
-          <label style={{
-            display:'flex', flexDirection:'column', alignItems:'center', gap:4,
-            border:'1.5px dashed var(--border-dark)', borderRadius:8, padding:'1rem',
-            cursor:'pointer', marginBottom:'1rem', background:'var(--bg-muted)',
-            fontSize:'0.8125rem', color:'var(--text-secondary)',
-          }}>
-            <span>📎 {uploading ? 'Uploading…' : 'Click to upload'}</span>
-            <span style={{ fontSize:'0.6875rem', color:'var(--text-muted)' }}>PDF, images, docs, ZIP (max 16 MB)</span>
-            <input type="file" style={{ display:'none' }} onChange={uploadFile} disabled={uploading} />
-          </label>
+          {/* ATTACHMENTS */}
+          <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5">
 
-          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-            {attachments.length === 0
-              ? <p style={{ color:'var(--text-muted)', fontSize:'0.8125rem' }}>No files uploaded.</p>
-              : attachments.map(a => (
-                <div key={a.id} style={{
-                  display:'flex', justifyContent:'space-between', alignItems:'center',
-                  padding:'0.5rem 0.75rem', background:'var(--bg-muted)', borderRadius:7,
-                  border:'1px solid var(--border)',
-                }}>
-                  <div style={{ minWidth:0 }}>
-                    <p style={{ fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.filename}</p>
-                    <p style={{ fontSize:'0.6875rem', color:'var(--text-muted)' }}>{a.uploader_name}</p>
-                  </div>
-                  <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                    <a href={`http://localhost:5000/api/attachments/${a.id}/download`}
-                      target="_blank" rel="noreferrer"
-                      style={{ fontSize:'0.75rem' }}
-                      className="btn btn-secondary"
-                    >↓</a>
+            <h3 className="flex items-center gap-2 text-sm text-white/40 mb-3 uppercase">
+              <Paperclip size={14} /> Attachments ({attachments.length})
+            </h3>
+
+            <label className="flex items-center justify-center gap-2 border border-dashed border-white/20 rounded-xl py-3 text-sm cursor-pointer hover:border-indigo-500">
+              <Upload size={14} />
+              {uploading ? 'Uploading...' : 'Upload'}
+              <input type="file" hidden onChange={uploadFile} />
+            </label>
+
+            <div className="space-y-2 mt-3">
+              {attachments.map(a => (
+                <div key={a.id} className="flex justify-between items-center bg-white/[0.03] px-3 py-2 rounded-lg group">
+
+                  <p className="text-xs text-white/60 truncate">{a.filename}</p>
+
+                  <div className="flex gap-2">
+                    <a href={`http://localhost:5000/api/attachments/${a.id}/download`} target="_blank">
+                      <Download size={12} className="text-indigo-400" />
+                    </a>
+
                     {(a.uploaded_by === user.id || isAdmin) && (
-                      <button className="btn btn-danger" style={{ fontSize:'0.75rem', padding:'0.25rem 0.5rem' }}
-                        onClick={()=>deleteAttachment(a.id)}>×</button>
+                      <button
+                        onClick={() => deleteAttachment(a.id)}
+                        className="opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={12} className="text-red-400" />
+                      </button>
                     )}
                   </div>
+
                 </div>
-              ))
-            }
+              ))}
+            </div>
+
           </div>
         </div>
       </div>
