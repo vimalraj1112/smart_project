@@ -90,7 +90,7 @@ function AddTaskModal({ projectId, users, onClose, onSaved }) {
             <select
               value={form.assigned_user_id}
               onChange={e => setForm(p => ({ ...p, assigned_user_id: e.target.value }))}
-              className="bg-white/[0.05] border border-white/10 rounded-lg px-2 py-2 text-sm text-white"
+              className="bg-slate-800 border border-white/10 rounded-lg px-2 py-2 text-sm text-white"
             >
               <option value="">Unassigned</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -99,7 +99,7 @@ function AddTaskModal({ projectId, users, onClose, onSaved }) {
             <select
               value={form.priority}
               onChange={e => setForm(p => ({ ...p, priority: e.target.value }))}
-              className="bg-white/[0.05] border border-white/10 rounded-lg px-2 py-2 text-sm text-white"
+              className="bg-slate-800 border border-white/10 rounded-lg px-2 py-2 text-sm text-white"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>

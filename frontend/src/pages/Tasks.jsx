@@ -88,11 +88,11 @@ function TaskModal({ projectId, users, projects, onClose, onSaved }) {
               required
               value={form.project_id}
               onChange={e=>setForm(p=>({...p,project_id:e.target.value}))}
-              className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2"
+              className="w-full bg-slate-800 border border-white/10 text-white rounded-lg px-3 py-2"
             >
               <option value="">Select Project</option>
               {projects.map(p=>(
-                <option key={p.id} value={p.id}>{p.project_name}</option>
+                <option key={p.id} value={p.id}className="bg-slate-800 text-white">{p.project_name}</option>
               ))}
             </select>
           )}
@@ -101,7 +101,7 @@ function TaskModal({ projectId, users, projects, onClose, onSaved }) {
             <select
               value={form.assigned_user_id}
               onChange={e=>setForm(p=>({...p,assigned_user_id:e.target.value}))}
-              className="bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2"
+              className="bg-slate-800 border border-white/10 text-white rounded-lg px-3 py-2"
             >
               <option value="">Assign</option>
               {users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
@@ -110,7 +110,7 @@ function TaskModal({ projectId, users, projects, onClose, onSaved }) {
             <select
               value={form.priority}
               onChange={e=>setForm(p=>({...p,priority:e.target.value}))}
-              className="bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2"
+              className="bg-slate-800 border border-white/10 text-white rounded-lg px-3 py-2"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
